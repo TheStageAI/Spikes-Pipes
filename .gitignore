@@ -19,9 +19,13 @@ env/
 
 # Experiment data / runs
 sp_logs/
+demo_logs/
 demo_sections/
 runs/
 *.db
+
+# Build artifacts
+*.egg-info/
 
 # OS
 .DS_Store
