@@ -1,5 +1,9 @@
 <p align="center">
-  <img src="spikesnpipes/static/spikes_logo.png" alt="Spikes & Pipes" width="280">
+  <picture>
+    <source media="(prefers-color-scheme: light)" srcset="spikesnpipes/static/spikes_logo_light.png" width="280">
+    <source media="(prefers-color-scheme: dark)" srcset="spikesnpipes/static/spikes_logo.png" width="280">
+    <img src="spikesnpipes/static/spikes_logo.png" alt="Spikes & Pipes" width="280">
+  </picture>
 </p>
 
 Local-first experiment dashboard for deep learning. Log metrics, media, and
