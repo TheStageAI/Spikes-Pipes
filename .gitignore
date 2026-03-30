@@ -1,0 +1,32 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+*.egg
+
+# Environments
+.venv/
+venv/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Experiment data / runs
+sp_logs/
+demo_logs/
+demo_sections/
+runs/
+*.db
+
+# Build artifacts
+*.egg-info/
+
+# OS
+.DS_Store
+Thumbs.db

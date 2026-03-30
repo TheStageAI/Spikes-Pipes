@@ -1,0 +1,43 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "spikesnpipes"
+version = "0.1.0"
+description = "Streamlit based open-source experiments dashboard"
+readme = "README.md"
+requires-python = ">=3.10"
+license = {text = "MIT"}
+dependencies = [
+    "streamlit",
+    "plotly",
+    "numpy",
+    "Pillow",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "ruff",
+]
+lttb = ["lttb"]
+
+[project.scripts]
+spikesnpipes = "spikesnpipes.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["spikesnpipes*"]
+
+[tool.setuptools.package-data]
+spikesnpipes = ["static/*"]
+
+[tool.ruff]
+line-length = 90
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
