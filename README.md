@@ -265,185 +265,326 @@ w.create_text_image_to_video_section("Animate Eval",
 
 ## Comparison sections
 
-Comparison sections are designed for engineers working on **model
-compression, acceleration, and distillation**. You have a reference model
-and a compressed variant — you need to verify the outputs still match.
+Built for **model compression, acceleration, and distillation** engineers.
+You have an original model and a compressed variant — you need to verify
+the outputs still match. Comparison sections give you pixel-level A/B
+tools to catch regressions that metrics alone miss.
 
 ### How it works
 
-You run the same script for each model. Each run logs to its own
-directory using the same tag names. The dashboard discovers both and
-lets you A/B them.
+Write **one script**. Run it **twice** — once per model. The dashboard
+compares the two runs automatically.
 
-**Your eval script:**
+Each example below is a **complete script**. Copy it, run it twice with
+different `--model` and `--run_name` args, then open the dashboard:
+
+```bash
+python eval_diffusion.py --model models/sd_fp16   --run_name original
+python eval_diffusion.py --model models/sd_int8   --run_name compressed
+spikesnpipes --logdir runs
+```
+
+```
+runs/
+├── original/    ← outputs from sd_fp16
+│   └── spikes.db
+└── compressed/  ← outputs from sd_int8
+    └── spikes.db
+```
+
+The dashboard discovers both runs. Pick Run A and Run B in the
+comparison section and use the built-in tools to spot differences.
+
+---
+
+<a id="cmp-t2i"></a>
+
+### Text → Image comparison
+
+Compare generated images from two models given the same prompt.
+Run the script below twice — once for the original model, once for the
+compressed one. Both runs log to separate directories under `runs/`.
+Open the dashboard with `spikesnpipes --logdir runs` and pick Run A / Run B
+to compare outputs side-by-side.
+Tools: toggle/flicker, pixel diff ×10, synced zoom (100%–400%) & pan.
 
 ```python
-# eval.py
+# eval_diffusion.py — run twice with different --model / --run_name
 import argparse
 import spikesnpipes as sp
+from my_model import load_model
 
-parser = argparse.ArgumentParser()
-parser.add_argument("--run_name", required=True)
-args = parser.parse_args()
+args = argparse.ArgumentParser()
+args.add_argument("--model", required=True)
+args.add_argument("--run_name", required=True)
+args = args.parse_args()
 
+model = load_model(args.model)
 w = sp.Writer(f"runs/{args.run_name}")
 
-# register comparison section (same tags for every run)
+# 1. Declare the comparison section (what tags to compare)
 w.create_text_to_image_comparison("Diffusion Compare",
     prompt_tag="Gen/Prompt", output_tag="Gen/Output")
 
-# your eval loop
-for step, (prompt, image) in enumerate(eval_results):
+# 2. Run eval and log data
+for step, prompt in enumerate(["a red car at sunset", "a cat on a windowsill"]):
+    image = model.generate(prompt)
     w.add_text("Gen/Prompt", text=prompt, step=step)
     w.add_images("Gen/Output", images=[image], step=step)
 
 w.close()
 ```
 
-**Run it for each model:**
-
-```bash
-python eval.py --run_name original
-python eval.py --run_name compressed
-```
-
-**Launch the dashboard:**
-
-```bash
-spikesnpipes --logdir runs
-```
-
-```
-runs/
-├── original/       ← reference model outputs
-│   └── spikes.db
-└── compressed/     ← compressed model outputs
-    └── spikes.db
-```
-
-The dashboard shows both runs. Pick Run A and Run B, then use toggle,
-pixel diff, word diff, or synced zoom to spot regressions.
-
-<a id="cmp-t2i"></a>
-
-### Text → Image comparison
-
-```python
-w.add_text("Gen/Prompt", text=prompt, step=step)
-w.add_images("Gen/Output", images=[generated_image], step=step)
-
-w.create_text_to_image_comparison("Diffusion Compare",
-    prompt_tag="Gen/Prompt", output_tag="Gen/Output")
-```
-
-Toggle/flicker between original and compressed outputs. Pixel diff
-with ×10 amplification. Synced zoom at 100%/200%/400% with mouse-drag
-panning.
-
 <a id="cmp-t2t"></a>
 
 ### Text → Text comparison
 
+Compare text outputs (translation, LLM, summarisation) from two models.
+Run the script twice with different `--model` / `--run_name` to produce
+two runs, then open the dashboard to see word-level diffs between them.
+Tools: word-level diff — green = added, red = removed.
+
 ```python
-w.add_text("MT/Source", text=source, step=step)
-w.add_text("MT/Output", text=model_output, step=step)
-w.add_text("MT/Ref", text=reference, step=step)          # optional
+# eval_translate.py — run twice with different --model / --run_name
+import argparse
+import spikesnpipes as sp
+from my_model import load_model
+
+args = argparse.ArgumentParser()
+args.add_argument("--model", required=True)
+args.add_argument("--run_name", required=True)
+args = args.parse_args()
+
+model = load_model(args.model)
+w = sp.Writer(f"runs/{args.run_name}")
 
 w.create_text_to_text_comparison("Translation Compare",
     input_tag="MT/Source", output_tag="MT/Output",
     ground_truth_tag="MT/Ref")
-```
 
-Word-level diff highlighting: green = added, red = removed.
+for step, (source, reference) in enumerate(test_pairs):
+    output = model.translate(source)
+    w.add_text("MT/Source", text=source, step=step)
+    w.add_text("MT/Output", text=output, step=step)
+    w.add_text("MT/Ref", text=reference, step=step)
+
+w.close()
+```
 
 <a id="cmp-a2t"></a>
 
 ### Audio → Text comparison
 
+Compare ASR transcriptions from two models on the same audio clips.
+Run the script twice — each run transcribes the same audio with a
+different model. The dashboard highlights word-level differences
+between the two transcriptions.
+Tools: word-level diff.
+
 ```python
-w.add_audio("ASR/Audio", audio=waveform, step=step, sr=16000)
-w.add_text("ASR/GT", text=transcript, step=step)
-w.add_text("ASR/Pred", text=prediction, step=step)
+# eval_asr.py — run twice with different --model / --run_name
+import argparse
+import spikesnpipes as sp
+from my_model import load_model
+
+args = argparse.ArgumentParser()
+args.add_argument("--model", required=True)
+args.add_argument("--run_name", required=True)
+args = args.parse_args()
+
+model = load_model(args.model)
+w = sp.Writer(f"runs/{args.run_name}")
 
 w.create_audio_to_text_comparison("ASR Compare",
     audio_tag="ASR/Audio", prediction_tag="ASR/Pred",
     ground_truth_tag="ASR/GT")
+
+for step, (audio, transcript) in enumerate(test_samples):
+    prediction = model.transcribe(audio)
+    w.add_audio("ASR/Audio", audio=audio, step=step, sr=16000)
+    w.add_text("ASR/Pred", text=prediction, step=step)
+    w.add_text("ASR/GT", text=transcript, step=step)
+
+w.close()
 ```
 
 <a id="cmp-t2a"></a>
 
 ### Text → Audio comparison
 
+Compare synthesised speech from two TTS models on the same input text.
+Run the script twice to produce two sets of audio files, then listen to
+both side-by-side in the dashboard to catch quality regressions.
+Tools: A/B playback.
+
 ```python
-w.add_text("TTS/Text", text=input_text, step=step)
-w.add_audio("TTS/Audio", audio=synthesised_wav, step=step, sr=22050)
+# eval_tts.py — run twice with different --model / --run_name
+import argparse
+import spikesnpipes as sp
+from my_model import load_model
+
+args = argparse.ArgumentParser()
+args.add_argument("--model", required=True)
+args.add_argument("--run_name", required=True)
+args = args.parse_args()
+
+model = load_model(args.model)
+w = sp.Writer(f"runs/{args.run_name}")
 
 w.create_text_to_audio_comparison("TTS Compare",
     input_tag="TTS/Text", output_tag="TTS/Audio")
-```
 
-A/B playback — listen to both outputs for the same input.
+for step, text in enumerate(test_sentences):
+    wav = model.synthesise(text)
+    w.add_text("TTS/Text", text=text, step=step)
+    w.add_audio("TTS/Audio", audio=wav, step=step, sr=22050)
+
+w.close()
+```
 
 <a id="cmp-ti2i"></a>
 
 ### Text + Image → Image comparison
 
+Compare image editing / inpainting outputs from two models. Both runs
+receive the same source image and instruction — each produces an edited
+output. Run the script twice, then toggle between the two outputs in the
+dashboard to spot pixel-level artefacts.
+Tools: toggle/flicker, pixel diff ×10, synced zoom & pan.
+
 ```python
-w.add_text("Edit/Prompt", text=instruction, step=step)
-w.add_images("Edit/Input", images=[source_image], step=step)
-w.add_images("Edit/Output", images=[edited_image], step=step)
+# eval_edit.py — run twice with different --model / --run_name
+import argparse
+import spikesnpipes as sp
+from my_model import load_model
+
+args = argparse.ArgumentParser()
+args.add_argument("--model", required=True)
+args.add_argument("--run_name", required=True)
+args = args.parse_args()
+
+model = load_model(args.model)
+w = sp.Writer(f"runs/{args.run_name}")
 
 w.create_text_image_to_image_comparison("Edit Compare",
     prompt_tag="Edit/Prompt", input_image_tag="Edit/Input",
     output_tag="Edit/Output")
-```
 
-Toggle/flicker, pixel diff, synced zoom — same tools as Text → Image.
+for step, (instruction, source_image) in enumerate(test_edits):
+    edited = model.edit(source_image, instruction)
+    w.add_text("Edit/Prompt", text=instruction, step=step)
+    w.add_images("Edit/Input", images=[source_image], step=step)
+    w.add_images("Edit/Output", images=[edited], step=step)
+
+w.close()
+```
 
 <a id="cmp-ti2t"></a>
 
 ### Text + Image → Text comparison
 
+Compare VLM / visual QA answers from two models. Both runs see the same
+image and question — the dashboard shows the two answers side-by-side
+with word-level diff highlighting so you can spot semantic regressions.
+Tools: word-level diff.
+
 ```python
-w.add_text("VLM/Question", text=question, step=step)
-w.add_images("VLM/Image", images=[input_image], step=step)
-w.add_text("VLM/Answer", text=model_answer, step=step)
+# eval_vlm.py — run twice with different --model / --run_name
+import argparse
+import spikesnpipes as sp
+from my_model import load_model
+
+args = argparse.ArgumentParser()
+args.add_argument("--model", required=True)
+args.add_argument("--run_name", required=True)
+args = args.parse_args()
+
+model = load_model(args.model)
+w = sp.Writer(f"runs/{args.run_name}")
 
 w.create_text_image_to_text_comparison("VLM Compare",
     prompt_tag="VLM/Question", input_image_tag="VLM/Image",
     output_tag="VLM/Answer")
+
+for step, (image, question) in enumerate(test_questions):
+    answer = model.ask(image, question)
+    w.add_text("VLM/Question", text=question, step=step)
+    w.add_images("VLM/Image", images=[image], step=step)
+    w.add_text("VLM/Answer", text=answer, step=step)
+
+w.close()
 ```
 
 <a id="cmp-t2v"></a>
 
 ### Text → Video comparison
 
+Compare generated videos from two models given the same prompt. Run the
+script twice to produce two sets of clips, then play them simultaneously
+in the dashboard with a single play button to catch temporal differences.
+Tools: synced playback, frame-by-frame stepping, speed control (0.25×–2×).
+
 ```python
-w.add_text("VGen/Prompt", text=prompt, step=step)
-w.add_video("VGen/Output", video=generated_frames, step=step)
+# eval_videogen.py — run twice with different --model / --run_name
+import argparse
+import spikesnpipes as sp
+from my_model import load_model
+
+args = argparse.ArgumentParser()
+args.add_argument("--model", required=True)
+args.add_argument("--run_name", required=True)
+args = args.parse_args()
+
+model = load_model(args.model)
+w = sp.Writer(f"runs/{args.run_name}")
 
 w.create_text_to_video_comparison("Video Compare",
     prompt_tag="VGen/Prompt", output_tag="VGen/Output")
-```
 
-Synced playback with a single play button, frame-by-frame stepping, and
-speed control (0.25× – 2×).
+for step, prompt in enumerate(test_prompts):
+    frames = model.generate_video(prompt)
+    w.add_text("VGen/Prompt", text=prompt, step=step)
+    w.add_video("VGen/Output", video=frames, step=step)
+
+w.close()
+```
 
 <a id="cmp-ti2v"></a>
 
 ### Text + Image → Video comparison
 
+Compare animated clips from two models given the same source image and
+prompt. Run the script twice — each produces an animation from the same
+still frame. The dashboard syncs both videos so you can step through
+frame-by-frame and verify temporal consistency.
+Tools: synced playback, frame stepping, speed control.
+
 ```python
-w.add_text("Anim/Prompt", text=prompt, step=step)
-w.add_images("Anim/Input", images=[still_image], step=step)
-w.add_video("Anim/Output", video=animated_frames, step=step)
+# eval_animate.py — run twice with different --model / --run_name
+import argparse
+import spikesnpipes as sp
+from my_model import load_model
+
+args = argparse.ArgumentParser()
+args.add_argument("--model", required=True)
+args.add_argument("--run_name", required=True)
+args = args.parse_args()
+
+model = load_model(args.model)
+w = sp.Writer(f"runs/{args.run_name}")
 
 w.create_text_image_to_video_comparison("Animate Compare",
     prompt_tag="Anim/Prompt", input_image_tag="Anim/Input",
     output_tag="Anim/Output")
-```
 
-Synced playback — same controls as Text → Video comparison.
+for step, (image, prompt) in enumerate(test_animations):
+    frames = model.animate(image, prompt)
+    w.add_text("Anim/Prompt", text=prompt, step=step)
+    w.add_images("Anim/Input", images=[image], step=step)
+    w.add_video("Anim/Output", video=frames, step=step)
+
+w.close()
+```
 
 ---
 
