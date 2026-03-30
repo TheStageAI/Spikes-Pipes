@@ -1,4 +1,6 @@
-<img src="spikesnpipes/static/spikes_logo.png" alt="Spikes & Pipes" width="280">
+<p align="center">
+  <img src="spikesnpipes/static/spikes_logo.png" alt="Spikes & Pipes" width="280">
+</p>
 
 Local-first experiment dashboard for deep learning. Log metrics, media, and
 structured evaluation data from your training scripts, then compare runs
