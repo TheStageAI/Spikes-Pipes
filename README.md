@@ -8,6 +8,10 @@ in a rich Streamlit UI — scalars, images, video, audio, text, with built-in
 A/B comparison tools (toggle/flicker, pixel diff, word diff, synced zoom,
 synced video playback).
 
+<p align="center">
+  <img src="examples/intro_img.png" alt="Dashboard screenshot" width="100%">
+</p>
+
 ---
 
 ## Install
