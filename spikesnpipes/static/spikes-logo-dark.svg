@@ -1,0 +1,8 @@
+<svg width="320" height="48" viewBox="0 0 320 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Spike waveform icon -->
+  <polyline points="4,32 12,32 16,28 20,36 24,16 28,38 32,12 36,36 40,20 44,34 48,28 52,32 60,32"
+    stroke="#C4A800" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  <!-- Text -->
+  <text x="72" y="34" font-family="Inter, -apple-system, Helvetica Neue, Arial, sans-serif"
+    font-size="28" font-weight="700" letter-spacing="1.5" fill="#0C0C0C">SPIKES &amp; PIPES</text>
+</svg>
