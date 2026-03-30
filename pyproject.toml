@@ -11,6 +11,7 @@ requires-python = ">=3.10"
 license = {text = "MIT"}
 dependencies = [
     "streamlit",
+    "streamlit-autorefresh",
     "plotly",
     "numpy",
     "Pillow",
