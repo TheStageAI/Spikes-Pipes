@@ -18,9 +18,29 @@ pip install -e .
 
 ## Quick start
 
+```python
+import spikesnpipes as sp
+
+w = sp.Writer("runs/my_experiment")
+
+for step in range(100):
+    w.add_scalar("Train/Loss", step=step, val=1.0 / (step + 1))
+    w.add_scalar("Train/Accuracy", step=step, val=step / 100)
+
+w.close()
+```
+
 ```bash
-python examples/demo_sections.py      # generates two demo runs
-spikesnpipes --logdir demo_sections    # open http://localhost:8501
+spikesnpipes --logdir runs
+```
+
+That's it — open http://localhost:8501 and you'll see your plots.
+
+To explore all section types with demo data:
+
+```bash
+python examples/demo_sections.py
+spikesnpipes --logdir demo_sections
 ```
 
 ---
