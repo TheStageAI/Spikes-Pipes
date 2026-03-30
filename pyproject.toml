@@ -10,8 +10,8 @@ readme = "README.md"
 requires-python = ">=3.10"
 license = {text = "MIT"}
 dependencies = [
-    "streamlit",
-    "streamlit-autorefresh",
+    "streamlit==1.55.0",
+    "streamlit-autorefresh==1.0.1",
     "plotly",
     "numpy",
     "Pillow",
