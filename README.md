@@ -2,7 +2,7 @@
   <picture>
     <source media="(prefers-color-scheme: light)" srcset="spikesnpipes/static/spikes_logo_light.png" width="280">
     <source media="(prefers-color-scheme: dark)" srcset="spikesnpipes/static/spikes_logo.png" width="280">
-    <img src="https://raw.githubusercontent.com/TheStageAI/Spikes-Pipes/main/spikesnpipes/static/spikes_logo.png" alt="Spikes & Pipes" width="280">
+    <img src="https://raw.githubusercontent.com/TheStageAI/Spikes-Pipes/main/spikesnpipes/static/spikes_logo_light.png" alt="Spikes & Pipes" width="280">
   </picture>
 </p>
 
