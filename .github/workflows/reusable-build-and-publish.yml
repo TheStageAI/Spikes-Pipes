@@ -1,0 +1,72 @@
+name: Reusable Build and Publish
+
+on:
+  workflow_call:
+    inputs:
+      publish_target_type:
+        description: 'Type of publish target (e.g., "jfrog" or "pypi")'
+        required: true
+        type: string
+      jfrog_repository_url:
+        description: 'JFrog repository URL (only for jfrog target type)'
+        required: false
+        type: string
+      jfrog_username:
+        description: 'JFrog username (only for jfrog target type)'
+        required: false
+        type: string
+    secrets:
+      ONE_PASSWORD_TOKEN:
+        required: true
+
+jobs:
+  build_and_publish:
+    name: Build & Publish Wheel
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: get secrets
+        id: getsecrets
+        uses: 1password/load-secrets-action@v3
+        env:
+          OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.ONE_PASSWORD_TOKEN }}
+          PYPI_TOKEN: op://TheStage Development/PYPI_TOKEN/token
+          ARTIFACTORY_TOKEN_STAGING: op://TheStage Development/ARTIFACTORY_TOKEN_STAGING/token
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install and configure Poetry
+        uses: snok/install-poetry@v1
+        with:
+          virtualenvs-create: true
+          virtualenvs-in-project: true
+
+      - name: Install dependencies
+        run: poetry install --no-interaction --no-root
+
+      - name: Build with Poetry
+        run: poetry build
+
+      - name: Publish to JFrog Artifactory
+        if: inputs.publish_target_type == 'jfrog'
+        env:
+          ARTIFACTORY_TOKEN: ${{ steps.getsecrets.outputs.ARTIFACTORY_TOKEN_STAGING }}
+        run: |
+          pip install twine
+          twine upload \
+            --repository-url ${{ inputs.jfrog_repository_url }} \
+            -u ${{ inputs.jfrog_username }} -p "$ARTIFACTORY_TOKEN" dist/* --verbose
+
+      - name: Publish to PyPI
+        if: inputs.publish_target_type == 'pypi'
+        env:
+          TWINE_USERNAME: __token__
+          TWINE_PASSWORD: ${{ steps.getsecrets.outputs.PYPI_TOKEN }}
+        run: |
+          pip install twine
+          twine upload dist/* --verbose
